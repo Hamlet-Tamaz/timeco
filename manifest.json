@@ -1,0 +1,14 @@
+{
+	"manifest_version": 2,
+	"name": "Timeco Extention",
+	"version": "0.4.2",
+
+	"content_scripts": [
+		{
+		"matches": [
+			"https://timeco-login.timeco.com/Timecard/MyTimecard.aspx"
+		],
+		"js": ["jquery-3.2.1.min.js", "popup.js"]
+		}
+	]
+}
