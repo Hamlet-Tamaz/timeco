@@ -37,7 +37,7 @@ if($('#mainForm #punch_list>tbody>tr:last-child td:nth-child(3)')[0].innerHTML.s
 }
 else {
     workHours = 8;
-    workMinutes = 30;
+    workMinutes = 0;
 }
 
 if (workMinutes.toString().length < 2) workMinutes = '0' + workMinutes;
@@ -90,7 +90,7 @@ minutesWorked = Math.floor( (60 * ('.' + splitTimeWorked[1])).toString() );
 if (minutesWorked.toString().length < 2) minutesWorked = '0' + minutesWorked;
 
 
-minutesLeft = (60 - minutesWorked + workMinutes).toString().substring(0, 2);
+minutesLeft = (60 - minutesWorked + +workMinutes).toString().substring(0, 2);
 if (minutesLeft.length < 2) minutesLeft = '0' + minutesLeft;
 if (minutesLeft >= 60) {
     minutesLeft = minutesLeft % 60;
