@@ -1,3 +1,37 @@
+var lunchDivOn = false;
+
+function setLunchDiv() {
+    var lunchDiv = ( 
+    '<div id="lunchDiv">' +
+        '<p>Add Lunch</p>' +
+        '<select name="lunch" id="lunch">' +
+          '<option value="0">0</option>'   +
+          '<option value="30">30</option>' +
+          '<option value="45">45</option>' +
+          '<option value="60">60</option>' +
+          '<option value="75">75</option>' +
+          '<option value="90">90</option>' +
+        '</select>' +
+    '</div>');
+
+    lunchDiv = $(lunchDiv).css({
+        "position":"relative", 
+        "top":"145px",
+        "left": "45px",
+        "z-index" : "10"
+    });
+    
+    if($('div#category-summary').length > 0){
+        $('div#category-summary').parent().parent().append(lunchDiv);  
+    } else {
+        lunchDiv = $(lunchDiv).css({
+            "top":"170px",
+        });
+
+        $('div#ajaxContainer').append(lunchDiv);
+    }
+};
+
 var timeco = setInterval(function() {
 
 var arr = [],
@@ -8,6 +42,8 @@ var arr = [],
     count = 0,
     nowHour = new Date().getHours(),
     nowMinute = new Date().getMinutes(),
+    ampmNowHour,
+    ampmCur,
     timeWorked = +$('#mainForm #punch_list>tbody>tr:last-child td:nth-child(10)')[0].innerHTML,
     splitTimeWorked,
     hoursWorked,
@@ -20,14 +56,34 @@ var arr = [],
     leaveHour,
     leaveMinute,
     leaveMinuteCarry = 0,
+    ampmLeave,
     overHours,
     overMinutes,
     lunchVal,
     timeDiv,
     timeDivOver,
-    goodbyeDiv;
+    goodbyeDiv,
+    onLunch;
 
 if (nowMinute.toString().length < 2) nowMinute = '0' + nowMinute;
+
+if (nowHour > 12) {
+    ampmNowHour = nowHour % 12 ;
+    ampmCur = 'pm'
+} else {
+    ampmNowHour = nowHour;
+    ampmCur = 'am'
+}
+
+if($('div.message table >tbody>tr>td:nth-child(5) >span').html() == 'Not submitted' && lunchDivOn == false) {
+        lunchDivOn = true;
+        setLunchDiv();
+    
+} 
+if ($('div.message table >tbody>tr>td:nth-child(5) >span').html() != 'Not submitted') {
+    lunchDivOn = false;
+}
+
 
 
 // Get time values from screen
@@ -120,26 +176,33 @@ if (leaveMinute.toString().length < 2) leaveMinute = '0' + leaveMinute;
 
 leaveHour = nowHour + hoursLeft + leaveMinuteCarry;
 
+if (leaveHour > 12) {
+    leaveHour = leaveHour % 12;
+    ampmLeave = 'pm'
+} else {
+    ampmLeave = 'am'
+}
 
 // Over-time
 
 overHours = Math.floor( Math.abs(hoursWorked - workHours) );
 
 overMinutes = minutesWorked - workMinutes;
+if (overMinutes.toString().length < 2) overMinutes = '0' + overMinutes;
 
 // Create divs
 
 timeDiv = ('<div id="timeDiv"> Work Hours: ' + workHours + ":"  + workMinutes           + 
-              '<br>Current Time: ' + nowHour     + ':' + nowMinute     +
+              '<br>Current Time: ' + ampmNowHour     + ':' + nowMinute     + ' ' + ampmCur  +
               '<br>Time Worked: '  + hoursWorked + ':' + minutesWorked + 
               '<br>Time Left: '    + hoursLeft   + ':' + minutesLeft   + 
-              '<br>Leave At: '     + leaveHour   + ':' + leaveMinute   + 
+              '<br>Leave At: '     + leaveHour   + ':' + leaveMinute   + ' ' + ampmLeave  +
               '<br><br class="extrabr"><br class="extrabr">'           +
           '</div>');
 
 
 timeDivOver = ('<div id="timeDiv"> <h1 style="color: red">You can leave now.</h1>'        + 
-                  '<br>Work Hours: '   + workHours   + 
+                  '<br>Work Hours: '   + workHours   + ':' + workMinutes   +
                   '<br>Current Time: ' + nowHour     + ':' + nowMinute     +
                   '<br>Time Worked: '  + hoursWorked + ':' + minutesWorked + 
                   '<br><div style="color:red">Overtime: '  + overHours     + ':' + overMinutes + 
@@ -171,6 +234,12 @@ if($('#mainForm #punch_list>tbody>tr:last-child td:nth-child(9) span.punch-time'
     goodbyeDiv = '<div id="timeDiv"><h1> You have clocked out for the day. <br>See you tomorrow!</h1></div>';
     $('div#category-summary').parent().parent().append(goodbyeDiv);
 }
+else if($('#mainForm #punch_list>tbody>tr:last-child td:nth-child(7) span.punch-time')[0].innerHTML.trim().length == 0 && $('#mainForm #punch_list>tbody>tr:last-child td:nth-child(6) span.punch-time')[0].innerHTML.trim().length != 0) {
+    onLunch = '<div id="timeDiv"><h1> Enjoy your lunch!</h1></div>';
+    $('div#category-summary').parent().parent().append(onLunch);
+
+    $('div#lunchDiv').remove(); 
+}
 else if (timeWorked < workHours) {
     if($('div#category-summary').length > 0){
         $('div#category-summary').parent().parent().append(timeDiv);  
@@ -201,33 +270,5 @@ else if (timeWorked < workHours) {
 
 }, 5000);
 
-setTimeout(function() {
-    var lunchDiv = ( 
-    '<div id="lunchDiv">' +
-        '<p>Add Lunch</p>' +
-        '<select name="lunch" id="lunch">' +
-          '<option value="0">0</option>'   +
-          '<option value="30">30</option>' +
-          '<option value="60">60</option>' +
-        '</select>' +
-    '</div>');
 
-    lunchDiv = $(lunchDiv).css({
-        "position":"relative", 
-        "top":"145px",
-        "left": "45px",
-        "z-index" : "10"
-    });
-    
-    if($('div#category-summary').length > 0){
-        $('div#category-summary').parent().parent().append(lunchDiv);  
-    } else {
-        lunchDiv = $(lunchDiv).css({
-            "top":"170px",
-        });
-
-        $('div#ajaxContainer').append(lunchDiv);
-    }
-
-}, 4999);
  
