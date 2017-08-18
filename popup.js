@@ -21,14 +21,16 @@ function setLunchDiv() {
         "z-index" : "10"
     });
     
-    if($('div#category-summary').length > 0){
-        $('div#category-summary').parent().parent().append(lunchDiv);  
-    } else {
-        lunchDiv = $(lunchDiv).css({
-            "top":"170px",
-        });
+    if ($('#mainForm #punch_list>tbody>tr:last-child td.no_wrap span')[2].innerHTML.trim().length == 0 ) {
+        if($('div#category-summary').length > 0){
+            $('div#category-summary').parent().parent().append(lunchDiv);  
+        } else {
+            lunchDiv = $(lunchDiv).css({
+                "top":"170px",
+            });
 
-        $('div#ajaxContainer').append(lunchDiv);
+            $('div#ajaxContainer').append(lunchDiv);
+        }
     }
 };
 
@@ -54,11 +56,12 @@ var arr = [],
     minutesLeftCarry = 0,
     whenToLeave,
     leaveHour,
-    leaveMinute,
-    leaveMinuteCarry = 0,
+    leaveMinutes,
+    leaveMinutesCarry = 0,
     ampmLeave,
     overHours,
     overMinutes,
+//     overMinutesCarry = 0,
     lunchVal,
     timeDiv,
     timeDivOver,
@@ -154,79 +157,75 @@ if (minutesLeft >= 60) {
 }else if (minutesLeft == '60') {
     minutesLeft = "00";
     minutesLeftCarry = 1;
-}
+};
 hoursLeft = workHours - hoursWorked + minutesLeftCarry - 1;
 
-// Calculate leave time
+// leave time
 lunchVal = +$('select#lunch').val() || 0;
 
-leaveMinute = +nowMinute + +minutesLeft + lunchVal;
-if (leaveMinute >= 120) {
-    leaveMinute = leaveMinute % 60;
-    leaveMinuteCarry = 2;
+leaveMinutes = +nowMinute + +minutesLeft + lunchVal;
+if (leaveMinutes >= 120) {
+    leaveMinutes = leaveMinutes % 60;
+    leaveMinutesCarry = 2;
 
 }
-else if (leaveMinute >= 60) {
-    leaveMinute = leaveMinute % 60;
-    leaveMinuteCarry = 1;
+else if (leaveMinutes >= 60) {
+    leaveMinutes = leaveMinutes % 60;
+    leaveMinutesCarry = 1;
 
 };
 
-if (leaveMinute.toString().length < 2) leaveMinute = '0' + leaveMinute;
+if (leaveMinutes.toString().length < 2) leaveMinutes = '0' + leaveMinutes;
 
-leaveHour = nowHour + hoursLeft + leaveMinuteCarry;
+leaveHour = nowHour + hoursLeft + leaveMinutesCarry;
 
 if (leaveHour > 12) {
     leaveHour = leaveHour % 12;
-    ampmLeave = 'pm'
+    ampmLeave = 'pm';
 } else {
-    ampmLeave = 'am'
-}
+    ampmLeave = 'am';
+};
 
 // Over-time
 
-overHours = Math.floor( Math.abs(hoursWorked - workHours) );
-
-overMinutes = minutesWorked - workMinutes;
+overMinutes = minutesWorked + (60 - workMinutes);
+if (overMinutes >= 60) overMinutes = overMinutes % 60;
 if (overMinutes.toString().length < 2) overMinutes = '0' + overMinutes;
 
+overHours = hoursWorked - workHours;
+
 // Create divs
-
-timeDiv = ('<div id="timeDiv"> Work Hours: ' + workHours + ":"  + workMinutes           + 
-              '<br>Current Time: ' + ampmNowHour     + ':' + nowMinute     + ' ' + ampmCur  +
-              '<br>Time Worked: '  + hoursWorked + ':' + minutesWorked + 
-              '<br>Time Left: '    + hoursLeft   + ':' + minutesLeft   + 
-              '<br>Leave At: '     + leaveHour   + ':' + leaveMinute   + ' ' + ampmLeave  +
-              '<br><br class="extrabr"><br class="extrabr">'           +
-          '</div>');
+var timeDivStyle = '"font-size: 20px; color: green; position: absolute; bottom: 100px; right: 50px; border: solid 1px black; padding: 10px"';
 
 
-timeDivOver = ('<div id="timeDiv"> <h1 style="color: red">You can leave now.</h1>'        + 
-                  '<br>Work Hours: '   + workHours   + ':' + workMinutes   +
-                  '<br>Current Time: ' + nowHour     + ':' + nowMinute     +
-                  '<br>Time Worked: '  + hoursWorked + ':' + minutesWorked + 
-                  '<br><div style="color:red">Overtime: '  + overHours     + ':' + overMinutes + 
-              '</div></div>');
+timeDiv = ('<div id="timeDiv"><table style='+ timeDivStyle +'>'                + 
+              '<tr><td>Work Hours: </td> <td>'   + workHours   + ":" + workMinutes   + '</td></tr>'   + 
+              '<tr><td>Current Time: </td> <td>' + ampmNowHour + ':' + nowMinute     + ' ' + ampmCur  + '</td></tr>' +
+              '<tr><td>Time Worked: </td> <td>'  + hoursWorked + ':' + minutesWorked + '</td></tr>'   +
+              '<tr><td>Time Left: </td> <td>'    + hoursLeft   + ':' + minutesLeft   + '</td></tr>'   +
+              '<tr><td>Leave At: </td> <td>'     + leaveHour   + ':' + leaveMinutes   + ' ' + ampmLeave  + '</td></tr>' +
+              '<tr><td><br class="extrabr"><br class="extrabr">'           + '</td></tr>'   +
+          '</table></div>');
+
+
+timeDivOver = ('<div id="timeDiv"><table style='+ timeDivStyle +'>'                + 
+                  '<tr><td><h1 style="color: red">You can leave now.</h1></td></tr>'          + 
+                  '<tr><td>Work Hours: </td> <td>'   + workHours   + ':' + workMinutes   + '</td></tr>' +
+                  '<tr><td>Current Time: </td> <td>' + nowHour     + ':' + nowMinute     + ' ' + ampmLeave+ '</td></tr>' +
+                  '<tr><td>Time Worked: </td> <td>'  + hoursWorked + ':' + minutesWorked + '</td></tr>' +
+                  '<tr style="color:red"><td>Overtime: </td> <td>'  + overHours     + ':' + overMinutes +  '</td></tr>' +
+              '</table></div>');
 
 // Style divs
 
-timeDiv = $(timeDiv).css({
-    "position" : "relative",
-    "color"    : "green",
-    "font-size": "20px",
-    "background-color" : "#f0f0f0",
-    "padding"  : "10px",
-    "margin-left" : "10px"
-});
-
-timeDivOver = $(timeDivOver).css({
-    "position" : "relative",
-    "color"    : "green",
-    "font-size": "20px",
-    "background-color" : "#f0f0f0",
-    "padding"  : "10px",
-    "margin-left" : "10px"
-});
+// timeDiv = $(timeDiv).children().first().css({
+//     "position" : "relative",
+//     "color"    : "green",
+//     "font-size": "20px",
+//     "background-color" : "#f0f0f0",
+//     "padding"  : "10px",
+//     "margin-left" : "10px"
+// });
 
 $('div#timeDiv').remove();
 
