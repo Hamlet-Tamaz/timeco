@@ -15,22 +15,23 @@ function setLunchDiv() {
     '</div>');
 
     lunchDiv = $(lunchDiv).css({
-        "position":"relative", 
-        "top":"145px",
-        "left": "45px",
+        "position":"absolute", 
+        "bottom":"120px",
+        "right": "130px",
         "z-index" : "10"
     });
     
     if ($('#mainForm #punch_list>tbody>tr:last-child td.no_wrap span')[2].innerHTML.trim().length == 0 ) {
-        if($('div#category-summary').length > 0){
-            $('div#category-summary').parent().parent().append(lunchDiv);  
-        } else {
-            lunchDiv = $(lunchDiv).css({
-                "top":"170px",
-            });
+//         if($('div#category-summary').length > 0){
+//             $('div#category-summary').parent().parent().append(lunchDiv);  
+//         } else {
+//             lunchDiv = $(lunchDiv).css({
+//                 "top":"170px",
+//             });
 
-            $('div#ajaxContainer').append(lunchDiv);
-        }
+//             $('div#ajaxContainer').append(lunchDiv);
+//         }
+        $('div#ajaxContainer').append(lunchDiv);
     }
 };
 
@@ -61,7 +62,7 @@ var arr = [],
     ampmLeave,
     overHours,
     overMinutes,
-//     overMinutesCarry = 0,
+    overMinutesCarry = 0,
     lunchVal,
     timeDiv,
     timeDivOver,
@@ -136,16 +137,18 @@ arr.forEach((e,i,a)=>{
 // Calculating overall time
 
 timeWorked += time;
-timeWorked = timeWorked.toFixed(5);
+timeWorked = timeWorked.toFixed(10);
 
-timeLeft = (workHours - timeWorked).toFixed(5);
+timeLeft = (workHours - timeWorked);
 
 // Creating time with minutes from decimal time
 
 splitTimeWorked = timeWorked.split('.');
 
 hoursWorked = splitTimeWorked[0];
-minutesWorked = Math.floor( (60 * ('.' + splitTimeWorked[1])).toString() );
+minutesWorked = Math.round( (60 * ('.' + splitTimeWorked[1])) ).toString();
+
+
 if (minutesWorked.toString().length < 2) minutesWorked = '0' + minutesWorked;
 
 
@@ -153,6 +156,7 @@ minutesLeft = (60 - minutesWorked + +workMinutes).toString().substring(0, 2);
 if (minutesLeft.length < 2) minutesLeft = '0' + minutesLeft;
 if (minutesLeft >= 60) {
     minutesLeft = minutesLeft % 60;
+    if (minutesLeft.toString().length < 2) minutesLeft = '0' + minutesLeft;
     minutesLeftCarry = 1;
 }else if (minutesLeft == '60') {
     minutesLeft = "00";
@@ -186,16 +190,29 @@ if (leaveHour > 12) {
     ampmLeave = 'am';
 };
 
+//if it is friday, you work until 8:30 - 4 regardless
+// if(new Date().getDay() != 5 && leaveHour < 4) {
+//     leaveHour = 4;
+//     leaveMinutes = '00';
+
+//     hoursLeft = 4 - nowHour;
+//     minutesLeft = 60 - nowMinute;
+// }
+
 // Over-time
 
-overMinutes = minutesWorked + (60 - workMinutes);
-if (overMinutes >= 60) overMinutes = overMinutes % 60;
+overMinutes = +minutesWorked + (60 - workMinutes);
+if (overMinutes >= 60) {
+    overMinutes = overMinutes % 60;
+    overMinutesCarry = 1;
+}
 if (overMinutes.toString().length < 2) overMinutes = '0' + overMinutes;
 
-overHours = hoursWorked - workHours;
+overHours = hoursWorked - workHours + overMinutesCarry - 1;
+
 
 // Create divs
-var timeDivStyle = '"font-size: 20px; color: green; position: absolute; bottom: 100px; right: 50px; border: solid 1px black; padding: 10px"';
+var timeDivStyle = '"font-size: 20px; color: green; position: absolute; bottom: 100px; right: 50px; border: solid 1px black; padding: 10px; background-color: #f0f0f0"';
 
 
 timeDiv = ('<div id="timeDiv"><table style='+ timeDivStyle +'>'                + 
@@ -211,7 +228,7 @@ timeDiv = ('<div id="timeDiv"><table style='+ timeDivStyle +'>'                +
 timeDivOver = ('<div id="timeDiv"><table style='+ timeDivStyle +'>'                + 
                   '<tr><td><h1 style="color: red">You can leave now.</h1></td></tr>'          + 
                   '<tr><td>Work Hours: </td> <td>'   + workHours   + ':' + workMinutes   + '</td></tr>' +
-                  '<tr><td>Current Time: </td> <td>' + nowHour     + ':' + nowMinute     + ' ' + ampmLeave+ '</td></tr>' +
+                  '<tr><td>Current Time: </td> <td>' + ampmNowHour     + ':' + nowMinute     + ' ' + ampmCur+ '</td></tr>' +
                   '<tr><td>Time Worked: </td> <td>'  + hoursWorked + ':' + minutesWorked + '</td></tr>' +
                   '<tr style="color:red"><td>Overtime: </td> <td>'  + overHours     + ':' + overMinutes +  '</td></tr>' +
               '</table></div>');
@@ -230,7 +247,12 @@ timeDivOver = ('<div id="timeDiv"><table style='+ timeDivStyle +'>'             
 $('div#timeDiv').remove();
 
 if($('#mainForm #punch_list>tbody>tr:last-child td:nth-child(9) span.punch-time')[0].innerHTML.trim().length != 0) {
-    goodbyeDiv = '<div id="timeDiv"><h1> You have clocked out for the day. <br>See you tomorrow!</h1></div>';
+    if(new Date().getDate() == +$('#mainForm #punch_list>tbody>tr:last-child td:nth-child(3)').html().split(',')[1].split('/')[1]) {
+        goodbyeDiv = '<div id="timeDiv"><h1> You have clocked out for the day. <br>See you tomorrow!</h1></div>';    
+    }else {
+        goodbyeDiv = '<div id="timeDiv"><h1>Good Morning! Please punch in to start counting your hours!</h1></div>';
+    }
+    
     $('div#category-summary').parent().parent().append(goodbyeDiv);
 }
 else if($('#mainForm #punch_list>tbody>tr:last-child td:nth-child(7) span.punch-time')[0].innerHTML.trim().length == 0 && $('#mainForm #punch_list>tbody>tr:last-child td:nth-child(6) span.punch-time')[0].innerHTML.trim().length != 0) {
@@ -239,7 +261,7 @@ else if($('#mainForm #punch_list>tbody>tr:last-child td:nth-child(7) span.punch-
 
     $('div#lunchDiv').remove(); 
 }
-else if (timeWorked < workHours) {
+else if (hoursWorked < workHours || (hoursWorked == workHours && minutesWorked < workMinutes) || (new Date().getDay() == 5 && new Date().getHours() < 16 ) ) {
     if($('div#category-summary').length > 0){
         $('div#category-summary').parent().parent().append(timeDiv);  
 
