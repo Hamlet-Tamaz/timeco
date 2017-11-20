@@ -21,7 +21,26 @@ function setLunchDiv() {
         "z-index" : "10"
     });
     
-    if ($('#mainForm #punch_list>tbody>tr:last-child td.no_wrap span')[2].innerHTML.trim().length == 0 ) {
+    var lunchSelect = function() {
+        setTimeout(function() {
+            setLunchDiv();
+        }, 4000)  
+    }
+
+    var firstRow_out = $('#mainForm #punch_list>tbody>tr:last-child td.no_wrap span')[2];
+
+//     If we are in a holiday week, I don't want the last row in the table, but the last non-'Holiday' row.
+    if( $('#mainForm #punch_list>tbody>tr:last-child td:first-child').html() == 'Holiday') {
+        var tableRows = $('#mainForm #punch_list>tbody>tr');
+        for( var i=tableRows.length; i>0; i-- ) {
+            if(tableRows[i-1].children[0].innerText == 'Regular') {
+                firstRow_out = $('#mainForm #punch_list>tbody>tr:nth-child('+ i +') td.no_wrap span')[2];
+                break;
+            }
+        }
+    }
+
+    if (typeof(firstRow_out) != 'undefined' && firstRow_out.innerHTML.trim().length == 0 ) {
 //         if($('div#category-summary').length > 0){
 //             $('div#category-summary').parent().parent().append(lunchDiv);  
 //         } else {
@@ -32,10 +51,28 @@ function setLunchDiv() {
 //             $('div#ajaxContainer').append(lunchDiv);
 //         }
         $('div#ajaxContainer').append(lunchDiv);
-    }
+
+//         $('#addpunch-button').off('click', lunchSelect);
+    } 
+//     else {
+//         $('#addpunch-button').click(lunchSelect);
+//     }
 };
 
 var timeco = setInterval(function() {
+
+var firstRow_dailyTotal = +$('#mainForm #punch_list>tbody>tr:last-child td:nth-child(10)')[0].innerHTML;
+
+//     If we are in a holiday week, I don't want the last row in the table, but the last non-'Holiday' row.
+if( $('#mainForm #punch_list>tbody>tr:last-child td:first-child').html() == 'Holiday') {
+    var tableRows = $('#mainForm #punch_list>tbody>tr');
+    for( var i=tableRows.length; i>0; i-- ) {
+        if(tableRows[i-1].children[0].innerText == 'Regular') {
+            firstRow_dailyTotal = +$('#mainForm #punch_list>tbody>tr:nth-child('+ i +')').children()[8].innerHTML;
+            break;
+        }
+    }
+}
 
 var arr = [],
     cur,
@@ -47,7 +84,7 @@ var arr = [],
     nowMinute = new Date().getMinutes(),
     ampmNowHour,
     ampmCur,
-    timeWorked = +$('#mainForm #punch_list>tbody>tr:last-child td:nth-child(10)')[0].innerHTML,
+    timeWorked = firstRow_dailyTotal,
     splitTimeWorked,
     hoursWorked,
     minutesWorked,
@@ -71,12 +108,17 @@ var arr = [],
 
 if (nowMinute.toString().length < 2) nowMinute = '0' + nowMinute;
 
-if (nowHour > 12) {
-    ampmNowHour = nowHour % 12 ;
-    ampmCur = 'pm'
+if (nowHour >= 12) {
+    if (nowHour > 12) {
+        ampmNowHour = nowHour % 12;   
+    }
+    else {
+        ampmNowHour = nowHour;
+    }
+    ampmCur = 'pm';
 } else {
     ampmNowHour = nowHour;
-    ampmCur = 'am'
+    ampmCur = 'am';
 }
 
 if($('div.message table >tbody>tr>td:nth-child(5) >span').html() == 'Not submitted' && lunchDivOn == false) {
@@ -148,6 +190,12 @@ splitTimeWorked = timeWorked.split('.');
 hoursWorked = splitTimeWorked[0];
 minutesWorked = Math.round( (60 * ('.' + splitTimeWorked[1])) ).toString();
 
+minutesWorked = minutesWorked >= 0 ? minutesWorked : 0;
+
+if(hoursWorked.split('')[0] == '-') {
+    hoursWorked = hoursWorked.slice(1);
+    minutesWorked = 0;
+} 
 
 if (minutesWorked.toString().length < 2) minutesWorked = '0' + minutesWorked;
 
@@ -163,6 +211,11 @@ if (minutesLeft >= 60) {
     minutesLeftCarry = 1;
 };
 hoursLeft = workHours - hoursWorked + minutesLeftCarry - 1;
+
+if (hoursLeft < 0) {
+    hoursLeft = 0;
+    minutesLeft = '00';
+}
 
 // leave time
 lunchVal = +$('select#lunch').val() || 0;
@@ -212,26 +265,37 @@ overHours = hoursWorked - workHours + overMinutesCarry - 1;
 
 
 // Create divs
+
+//     timeDiv +=    '<tr><td style="font-size: 15px; color: black;" colspan="2">Make sure to only leave after 4pm.</td></tr>';
+
+
 var timeDivStyle = '"font-size: 20px; color: green; position: absolute; bottom: 100px; right: 50px; border: solid 1px black; padding: 10px; background-color: #f0f0f0"';
 
 
-timeDiv = ('<div id="timeDiv"><table style='+ timeDivStyle +'>'                + 
-              '<tr><td>Work Hours: </td> <td>'   + workHours   + ":" + workMinutes   + '</td></tr>'   + 
-              '<tr><td>Current Time: </td> <td>' + ampmNowHour + ':' + nowMinute     + ' ' + ampmCur  + '</td></tr>' +
-              '<tr><td>Time Worked: </td> <td>'  + hoursWorked + ':' + minutesWorked + '</td></tr>'   +
-              '<tr><td>Time Left: </td> <td>'    + hoursLeft   + ':' + minutesLeft   + '</td></tr>'   +
-              '<tr><td>Leave At: </td> <td>'     + leaveHour   + ':' + leaveMinutes   + ' ' + ampmLeave  + '</td></tr>' +
-              '<tr><td><br class="extrabr"><br class="extrabr">'           + '</td></tr>'   +
-          '</table></div>');
+timeDiv     =  '<div id="timeDiv"><table style='+ timeDivStyle +'>';
+timeDiv     +=    '<tr><td>Work Hours: </td> <td>'   + workHours   + ":" + workMinutes   + '</td></tr>';
+timeDiv     +=    '<tr><td>Current Time: </td> <td>' + ampmNowHour + ':' + nowMinute     + ' ' + ampmCur  + '</td></tr>';
+timeDiv     +=    '<tr><td>Time Worked: </td> <td>'  + hoursWorked + ':' + minutesWorked + '</td></tr>';
+timeDiv     +=    '<tr><td>Time Left: </td> <td>'    + hoursLeft   + ':' + minutesLeft   + '</td></tr>';
+
+// On Fridays, show time to leave as 4pm even if work time ends earlier
+// if($('#mainForm #punch_list>tbody>tr:last-child td:nth-child(3)')[0].innerHTML.substring(0,6)=='Friday' && leaveHour < 4) {
+//     timeDiv +=    '<tr><td>Leave At: </td> <td>4:00 pm</td></tr>';
+// } else {
+    timeDiv +=    '<tr><td>Leave At: </td> <td>'     + leaveHour   + ':' + leaveMinutes  + ' ' + ampmLeave  + '</td></tr>';
+// }
+timeDiv     +=    '<tr><td><br class="extrabr"><br class="extrabr"></td></tr>';
+timeDiv     += '</table></div>';
 
 
-timeDivOver = ('<div id="timeDiv"><table style='+ timeDivStyle +'>'                + 
-                  '<tr><td><h1 style="color: red">You can leave now.</h1></td></tr>'          + 
-                  '<tr><td>Work Hours: </td> <td>'   + workHours   + ':' + workMinutes   + '</td></tr>' +
-                  '<tr><td>Current Time: </td> <td>' + ampmNowHour     + ':' + nowMinute     + ' ' + ampmCur+ '</td></tr>' +
-                  '<tr><td>Time Worked: </td> <td>'  + hoursWorked + ':' + minutesWorked + '</td></tr>' +
-                  '<tr style="color:red"><td>Overtime: </td> <td>'  + overHours     + ':' + overMinutes +  '</td></tr>' +
-              '</table></div>');
+timeDivOver =  '<div id="timeDiv"><table style='+ timeDivStyle +'>';
+timeDivOver +=     '<tr><td><h1 style="color: red">You can leave now.</h1></td></tr>';
+timeDivOver +=     '<tr><td>Work Hours: </td> <td>'   + workHours   + ':' + workMinutes   + '</td></tr>';
+timeDivOver +=     '<tr><td>Current Time: </td> <td>' + ampmNowHour + ':' + nowMinute     + ' ' + ampmCur+ '</td></tr>';
+timeDivOver +=     '<tr><td>Time Worked: </td> <td>'  + hoursWorked + ':' + minutesWorked + '</td></tr>';
+timeDivOver +=     '<tr style="color:red"><td>Overtime: </td> <td>'       + overHours     + ':' + overMinutes +  '</td></tr>';
+
+timeDivOver += '</table></div>';
 
 // Style divs
 
@@ -246,7 +310,15 @@ timeDivOver = ('<div id="timeDiv"><table style='+ timeDivStyle +'>'             
 
 $('div#timeDiv').remove();
 
-if($('#mainForm #punch_list>tbody>tr:last-child td:nth-child(9) span.punch-time')[0].innerHTML.trim().length != 0) {
+var x = $('#mainForm #punch_list>tbody>tr:last-child td:nth-child(9) span.punch-time')[0]
+
+
+if(typeof(x) == 'undefined') {
+    goodbyeDiv = '<div id="timeDiv"><h1> You are in a completed pay range. <br>Please update from top left corner.</h1></div>';
+
+    $('div#ajaxContainer').append(goodbyeDiv);
+}
+else if($('#mainForm #punch_list>tbody>tr:last-child td:nth-child(9) span.punch-time')[0].innerHTML.trim().length != 0) {
     if(new Date().getDate() == +$('#mainForm #punch_list>tbody>tr:last-child td:nth-child(3)').html().split(',')[1].split('/')[1]) {
         goodbyeDiv = '<div id="timeDiv"><h1> You have clocked out for the day. <br>See you tomorrow!</h1></div>';    
     }else {
@@ -256,7 +328,32 @@ if($('#mainForm #punch_list>tbody>tr:last-child td:nth-child(9) span.punch-time'
     $('div#category-summary').parent().parent().append(goodbyeDiv);
 }
 else if($('#mainForm #punch_list>tbody>tr:last-child td:nth-child(7) span.punch-time')[0].innerHTML.trim().length == 0 && $('#mainForm #punch_list>tbody>tr:last-child td:nth-child(6) span.punch-time')[0].innerHTML.trim().length != 0) {
-    onLunch = '<div id="timeDiv"><h1> Enjoy your lunch!</h1></div>';
+    var lunchOut = $('#mainForm #punch_list>tbody>tr:last-child td:nth-child(6) span.punch-time')[0].innerHTML.trim().split(':');
+    var lunchOutHr = lunchOut[0];
+    var lunchOutMin = lunchOut[1];
+    
+    var lunchLengthMin_trial = nowMinute - +lunchOutMin;
+    
+    if(lunchLengthMin_trial < 0 && +lunchOutHr == nowHour) {
+        var lunchLengthMin = 0;
+        var lunchLength_carry = 0;
+    }
+    else if(lunchLengthMin_trial < 0) {
+        var lunchLengthMin = 60 + (lunchLengthMin_trial % 60);
+        var lunchLength_carry = 1;
+    } else {
+        var lunchLengthMin = lunchLengthMin_trial;
+        var lunchLength_carry = 0;
+    }
+
+    if (lunchLengthMin.toString().length < 2) lunchLengthMin = '0' + lunchLengthMin;
+
+    var lunchLentghHr = nowHour - +lunchOutHr - lunchLength_carry;
+
+    var lunchLength = lunchLentghHr + ':' + lunchLengthMin;
+
+    onLunch = '<div id="timeDiv"><h1> Enjoy your lunch!</h1><h1>You\'ve been away for ' + lunchLength +'.</h1></div>';
+
     $('div#category-summary').parent().parent().append(onLunch);
 
     $('div#lunchDiv').remove(); 
@@ -272,6 +369,10 @@ else if (hoursWorked < workHours || (hoursWorked == workHours && minutesWorked <
             timeDiv = $(timeDiv).css({"top" : "-33px"});
             timeDivOver = $(timeDivOver).css({"top" : "-33px"});
         };      
+
+        if($('#lunchDiv').length == 0) {
+            setLunchDiv();
+        }
     } else {
         timeDiv = $(timeDiv).css({
             "top" : "0px",
@@ -280,6 +381,10 @@ else if (hoursWorked < workHours || (hoursWorked == workHours && minutesWorked <
         });
 
         $('div#ajaxContainer').append(timeDiv);
+
+        if($('#lunchDiv').length == 0) {
+            setLunchDiv();
+        }
     }
     
 } else {
